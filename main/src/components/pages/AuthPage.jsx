@@ -5,17 +5,29 @@ import { isSupabaseConfigured, supabase } from '../../lib/supabaseClient'
 export function AuthPage({ mode = 'login', onAuthenticated }) {
   const navigate = useNavigate()
   const isLogin = mode === 'login'
-  const [form, setForm] = useState({ name: '', email: '', password: '', confirmPassword: '', role: 'customer' })
+  const [form, setForm] = useState({ name: '', email: '', password: '', confirmPassword: '' })
   const [message, setMessage] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
 
   useEffect(() => {
     let active = true
-    supabase.auth.getSession().then(({ data }) => {
-      if (active && data.session && isLogin) onAuthenticated(data.session.user, data.session.user.app_metadata?.role === 'admin' ? 'admin' : 'customer')
+    supabase.auth.getSession().then(({ data, error }) => {
+      if (!active || !isLogin) return
+      if (error) {
+        setMessage(error.message)
+        return
+      }
+      if (!data.session) return
+
+      const user = data.session.user
+      const role = user.app_metadata?.role === 'admin' ? 'admin' : 'customer'
+      onAuthenticated(user, role)
+      navigate(role === 'admin' ? '/admin/dashboard' : '/profile', { replace: true })
+    }).catch((error) => {
+      if (active) setMessage(error instanceof Error ? error.message : 'Unable to restore your session.')
     })
     return () => { active = false }
-  }, [isLogin, onAuthenticated])
+  }, [isLogin, navigate, onAuthenticated])
 
   const updateField = (event) => setForm((current) => ({ ...current, [event.target.name]: event.target.value }))
 
@@ -31,27 +43,27 @@ export function AuthPage({ mode = 'login', onAuthenticated }) {
       return
     }
     setIsSubmitting(true)
-    const result = isLogin
-      ? await supabase.auth.signInWithPassword({ email: form.email, password: form.password })
-      : await supabase.auth.signUp({ email: form.email, password: form.password, options: { data: { full_name: form.name, role: 'customer' } } })
-    setIsSubmitting(false)
-    if (result.error) {
-      setMessage(result.error.message)
-      return
-    }
-    const verifiedRole = result.data.user.app_metadata?.role === 'admin' ? 'admin' : 'customer'
-    if (isLogin && form.role === 'admin' && verifiedRole !== 'admin') {
-      await supabase.auth.signOut()
+    try {
+      const result = isLogin
+        ? await supabase.auth.signInWithPassword({ email: form.email, password: form.password })
+        : await supabase.auth.signUp({ email: form.email, password: form.password, options: { data: { full_name: form.name, role: 'customer' } } })
+      if (result.error) {
+        setMessage(result.error.message)
+        return
+      }
+      if (!isLogin && !result.data.session) {
+        setMessage('Account created. Check your email to confirm your address, then sign in.')
+        return
+      }
+
+      const role = isLogin && result.data.user.app_metadata?.role === 'admin' ? 'admin' : 'customer'
+      onAuthenticated(result.data.user, role)
+      navigate(role === 'admin' ? '/admin/dashboard' : '/profile')
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : 'Unable to sign in. Please try again.')
+    } finally {
       setIsSubmitting(false)
-      setMessage('This account has not been granted admin access.')
-      return
     }
-    if (!isLogin && !result.data.session) {
-      setMessage('Account created. Check your email to confirm your address, then sign in.')
-      return
-    }
-    onAuthenticated(result.data.user, isLogin ? form.role : 'customer')
-    navigate('/profile')
   }
 
   return (
@@ -64,7 +76,6 @@ export function AuthPage({ mode = 'login', onAuthenticated }) {
         {!isLogin ? <label>Full name<input name="name" value={form.name} onChange={updateField} type="text" placeholder="Abdul Moiz" required /></label> : null}
         <label>Email<input name="email" value={form.email} onChange={updateField} type="email" placeholder="you@example.com" required /></label>
         <label>Password<input name="password" value={form.password} onChange={updateField} type="password" placeholder="At least 6 characters" minLength="6" required /></label>
-        {isLogin ? <label>Sign in as<select name="role" value={form.role} onChange={updateField}><option value="customer">Customer</option><option value="admin">Admin</option></select></label> : null}
         {!isLogin ? <label>Confirm password<input name="confirmPassword" value={form.confirmPassword} onChange={updateField} type="password" placeholder="Repeat your password" minLength="6" required /></label> : null}
         {message ? <p className="auth-message" role="alert">{message}</p> : null}
         <button className="primary-button auth-submit" type="submit" disabled={isSubmitting}>{isSubmitting ? 'Connecting...' : isLogin ? 'Sign in' : 'Create account'} <i className="fa-solid fa-arrow-right" aria-hidden="true" /></button>

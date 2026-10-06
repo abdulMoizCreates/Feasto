@@ -1,5 +1,5 @@
 import { BrowserRouter, Navigate, NavLink, Route, Routes, useLocation } from 'react-router-dom'
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 
 import './App.css'
 
@@ -49,10 +49,10 @@ function App() {
     }
   }, [])
 
-  const handleAuthenticated = (user, role = 'customer') => {
+  const handleAuthenticated = useCallback((user, role = 'customer') => {
     setAuthUser(user)
     setAuthRole(role)
-  }
+  }, [])
 
   const addToCart = (item) => {
     setCart((current) => {
