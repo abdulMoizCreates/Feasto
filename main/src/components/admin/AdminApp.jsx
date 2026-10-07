@@ -22,10 +22,6 @@ export function AdminApp({ authUser, menuItems, setMenuItems, cart }) {
   return (
     <div className="admin-shell">
       <aside className="admin-sidebar">
-        <div className="brand admin-brand">
-          <span className="brand-mark">F</span>
-          <span>feasto<span>.</span></span>
-        </div>
         <p className="admin-nav-label">Main</p>
         <nav className="admin-nav">
           {adminNavItems.slice(0, 8).map((item) => (

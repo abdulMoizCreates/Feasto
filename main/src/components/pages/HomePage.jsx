@@ -4,7 +4,7 @@ import { CategoryCard } from '../cards/CategoryCard'
 import { ProductCard } from '../cards/ProductCard'
 import { categories, menuItems } from '../../data/menuData'
 
-export function HomePage({ addToCart }) {
+export function HomePage({ addToCart, likedItemIds, onToggleLike }) {
   const navigate = useNavigate()
 
   return (
@@ -75,7 +75,7 @@ export function HomePage({ addToCart }) {
 
         <div className="product-grid home-product-grid">
           {menuItems.slice(0, 3).map((item) => (
-            <ProductCard key={item.id} item={item} onAddToCart={addToCart} />
+            <ProductCard key={item.id} item={item} onAddToCart={addToCart} isLiked={likedItemIds.includes(item.id)} onToggleLike={onToggleLike} />
           ))}
         </div>
       </section>

@@ -1,5 +1,11 @@
 # React + Vite
 
+## Supabase customer data
+
+Apply `supabase/migrations/20261007150000_customer_account_data.sql` in the Supabase SQL Editor before using customer carts, wishlists, or order history. The migration creates per-user tables protected by row-level security and an order-placement function that saves the signed-in user's cart as an order and clears that cart atomically.
+
+Profile details are saved in the signed-in user's Supabase Auth metadata. Carts, wishlists, and order history are isolated by the authenticated user ID. Checkout only records the selected payment method; it does not process payments or collect card details.
+
 This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
 
 Currently, two official plugins are available:

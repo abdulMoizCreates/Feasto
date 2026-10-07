@@ -1,10 +1,14 @@
 import { NavLink } from 'react-router-dom'
 import { Button } from '../ui/Button'
+import { WishlistButton } from './WishlistButton'
 
-export function ProductCard({ item, onAddToCart, showDetails = true }) {
+export function ProductCard({ item, onAddToCart, isLiked, onToggleLike, showDetails = true }) {
   return (
     <article className="product-card">
-      <img src={item.image} alt={item.name} />
+      <div className="product-media">
+        <img src={item.image} alt={item.name} />
+        <WishlistButton item={item} isLiked={isLiked} onToggle={onToggleLike} />
+      </div>
       <div className="product-info">
         <div className="rating-row">
           <span><i className="fa-solid fa-star" aria-hidden="true" /> {item.rating}</span>

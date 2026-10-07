@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react'
 import { NavLink, useSearchParams } from 'react-router-dom'
 import { Button } from '../ui/Button'
 import { categories } from '../../data/menuData'
+import { WishlistButton } from '../cards/WishlistButton'
 
 const menuCategories = [...categories, 'Drinks', 'Desserts', 'Salads']
 const ratingFilters = [
@@ -11,7 +12,7 @@ const ratingFilters = [
   { label: '3.0 & above', value: 3, count: 450 },
 ]
 
-export function MenuPage({ addToCart, menuItems }) {
+export function MenuPage({ addToCart, menuItems, likedItemIds, onToggleLike }) {
   const [searchParams, setSearchParams] = useSearchParams()
   const activeCategory = searchParams.get('category') || 'all'
   const query = searchParams.get('search') || ''
@@ -141,7 +142,7 @@ export function MenuPage({ addToCart, menuItems }) {
           <div className="product-grid menu-grid">
             {filteredItems.map((item) => (
               <article key={item.id} className="product-card menu-card">
-                <div className="menu-card-media"><img src={item.image} alt={item.name} /><span className="menu-badge">{item.badge}</span><button type="button" className="wishlist-button" aria-label={`Save ${item.name}`}><i className="fa-regular fa-heart" aria-hidden="true" /></button></div>
+                <div className="menu-card-media"><img src={item.image} alt={item.name} /><span className="menu-badge">{item.badge}</span><WishlistButton item={item} isLiked={likedItemIds.includes(item.id)} onToggle={onToggleLike} /></div>
                 <div className="product-info">
                   <div className="meta-row"><span><i className="fa-solid fa-star" aria-hidden="true" /> {item.rating}</span><span className="rating-count">({Math.round(item.rating * 65)})</span></div>
                   <h3>{item.name}</h3><p>{item.description}</p>

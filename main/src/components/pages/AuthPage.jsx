@@ -2,29 +2,40 @@ import { useEffect, useState } from 'react'
 import { NavLink, useNavigate } from 'react-router-dom'
 import { isSupabaseConfigured, supabase } from '../../lib/supabaseClient'
 
+function getAuthErrorMessage(error) {
+  if (error instanceof TypeError && /fetch/i.test(error.message)) {
+    return 'Could not reach Supabase. Check that VITE_SUPABASE_URL is the URL of an active project, then restart the dev server.'
+  }
+  return error instanceof Error ? error.message : 'Unable to complete authentication. Please try again.'
+}
+
 export function AuthPage({ mode = 'login', onAuthenticated }) {
   const navigate = useNavigate()
   const isLogin = mode === 'login'
-  const [form, setForm] = useState({ name: '', email: '', password: '', confirmPassword: '' })
+  const [form, setForm] = useState(() => ({
+    name: '',
+    email: '',
+    password: '',
+    confirmPassword: '',
+  }))
   const [message, setMessage] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
 
   useEffect(() => {
     let active = true
     supabase.auth.getSession().then(({ data, error }) => {
-      if (!active || !isLogin) return
+      if (!active) return
       if (error) {
-        setMessage(error.message)
+        setMessage(getAuthErrorMessage(error))
         return
       }
-      if (!data.session) return
-
-      const user = data.session.user
-      const role = user.app_metadata?.role === 'admin' ? 'admin' : 'customer'
-      onAuthenticated(user, role)
-      navigate(role === 'admin' ? '/admin/dashboard' : '/profile', { replace: true })
+      if (active && data.session && isLogin) {
+        const role = data.session.user.app_metadata?.role === 'admin' ? 'admin' : 'customer'
+        onAuthenticated(data.session.user, role)
+        navigate(role === 'admin' ? '/admin/dashboard' : '/profile', { replace: true })
+      }
     }).catch((error) => {
-      if (active) setMessage(error instanceof Error ? error.message : 'Unable to restore your session.')
+      if (active) setMessage(getAuthErrorMessage(error))
     })
     return () => { active = false }
   }, [isLogin, navigate, onAuthenticated])
@@ -35,7 +46,7 @@ export function AuthPage({ mode = 'login', onAuthenticated }) {
     event.preventDefault()
     setMessage('')
     if (!isSupabaseConfigured) {
-      setMessage('Supabase is not configured yet. Add the dummy guide values in .env.local to connect authentication.')
+      setMessage('Supabase is not configured yet. Add your project URL and anon or publishable key to .env.local, then restart the dev server.')
       return
     }
     if (!isLogin && form.password !== form.confirmPassword) {
@@ -48,19 +59,18 @@ export function AuthPage({ mode = 'login', onAuthenticated }) {
         ? await supabase.auth.signInWithPassword({ email: form.email, password: form.password })
         : await supabase.auth.signUp({ email: form.email, password: form.password, options: { data: { full_name: form.name, role: 'customer' } } })
       if (result.error) {
-        setMessage(result.error.message)
+        setMessage(getAuthErrorMessage(result.error))
         return
       }
+      const verifiedRole = result.data.user.app_metadata?.role === 'admin' ? 'admin' : 'customer'
       if (!isLogin && !result.data.session) {
         setMessage('Account created. Check your email to confirm your address, then sign in.')
         return
       }
-
-      const role = isLogin && result.data.user.app_metadata?.role === 'admin' ? 'admin' : 'customer'
-      onAuthenticated(result.data.user, role)
-      navigate(role === 'admin' ? '/admin/dashboard' : '/profile')
+      onAuthenticated(result.data.user, verifiedRole)
+      navigate(verifiedRole === 'admin' ? '/admin/dashboard' : '/profile')
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : 'Unable to sign in. Please try again.')
+      setMessage(getAuthErrorMessage(error))
     } finally {
       setIsSubmitting(false)
     }

@@ -238,11 +238,6 @@ Can access:
 
 only after successful authentication and role verification.
 
-Admin access is determined by the authenticated Supabase user's trusted
-`app_metadata.role` value (`admin`), not by a role selector or user-editable
-metadata. Grant this role only through trusted Supabase tooling. After sign-in,
-admin users go to `/admin/dashboard`; other users go to `/profile`.
-
 ### Unauthorized behavior
 
 If a non-admin attempts to access an admin route:
@@ -1290,10 +1285,6 @@ Tables should remain usable without destroying readability.
 Critical:
 
 -   Never put Supabase service-role secrets in frontend code.
--   Never put admin passwords in frontend environment variables; Vite bundles
-    frontend configuration into browser-accessible assets.
--   Grant admin access only through trusted Supabase tooling using
-    `app_metadata.role`; never trust client-submitted roles or `user_metadata`.
 -   Use environment variables for public configuration.
 -   Use Supabase Row Level Security where applicable.
 -   Do not rely only on frontend checks for authorization.
